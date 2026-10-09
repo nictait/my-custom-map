@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Hosted Mapping App</title>
+    
+    <!-- MapLibre GL JS CSS & JS -->
+    <link href="https://unpkg.com" rel="stylesheet" />
+    <script src="https://unpkg.com"></script>
+
+    <!-- Turf.js for Advanced Spatial Queries -->
+    <script src="https://jsdelivr.net"></script>
+
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #info-panel {
+            position: absolute; top: 10px; left: 10px; 
+            background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 300px; z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="info-panel">
+    <h3>Spatial Query Tool</h3>
+    <p>Click anywhere on the map to find all dataset points within <strong>5 kilometres</strong>.</p>
+    <div id="results">No query run yet.</div>
+</div>
+
+<div id="map"></div>
+
+<script>
+    // 1. Initialise the MapLibre Map
+    // We use a free, open-source tile style from CartoDB
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://cartocdn.com', 
+        center: [-0.1276, 51.5074], // [Longitude, Latitude] - London default
+        zoom: 11
+    });
+
+    let geojsonData = null;
+
+    map.on('load', async () => {
+        // 2. Fetch your custom GeoJSON file from your repository
+        // Replace './data/your-file.geojson' with your actual path
+        try {
+            const response = await fetch('./data/your-file.geojson');
+            geojsonData = await response.json();
+        } catch (err) {
+            console.error("Could not load GeoJSON, using dummy data fallback.", err);
+            // Fallback mock point data for demonstration purposes
+            geojsonData = turf.featureCollection([
+                turf.point([-0.1276, 51.5074], { name: "Central Point A" }),
+                turf.point([-0.1426, 51.5174], { name: "North-West Point B" }),
+                turf.point([-0.0876, 51.4974], { name: "South-East Point C" }),
+                turf.point([-0.2000, 51.6000], { name: "Far Away Point D" })
+            ]);
+        }
+
+        // 3. Add the GeoJSON data as a map source and layer
+        map.addSource('custom-data', {
+            type: 'geojson',
+            data: geojsonData
+        });
+
+        map.addLayer({
+            id: 'points-layer',
+            type: 'circle',
+            source: 'custom-data',
+            paint: {
+                'circle-radius': 7,
+                'circle-color': '#3b82f6',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        // 4. Handle Spatial Queries on User Click
+        map.on('click', (e) => {
+            const clickPoint = turf.point([e.lngLat.lng, e.lngLat.lat]);
+            let matchCount = 0;
+            let listHtml = '<ul>';
+
+            // Use Turf.js to loop through features and compute distances completely offline
+            turf.featureEach(geojsonData, (currentFeature) => {
+                // Calculate distance in kilometres
+                const distance = turf.distance(clickPoint, currentFeature, { units: 'kilometers' });
+                
+                // If the point is within 5km, track it
+                if (distance <= 5) {
+                    matchCount++;
+                    const name = currentFeature.properties.name || "Unnamed Location";
+                    listHtml += `<li>${name} (${distance.toFixed(2)} km away)</li>`;
+                }
+            });
+
+            listHtml += '</ul>';
+
+            // Update the user interface dynamically
+            document.getElementById('results').innerHTML = `
+                <strong>Found ${matchCount} features within 5km:</strong>
+                ${matchCount > 0 ? listHtml : '<p>No points found nearby.</p>'}
+            `;
+        });
+    });
+</script>
+
+</body>
+</html>
