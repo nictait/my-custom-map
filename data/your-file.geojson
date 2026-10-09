@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Big Ben & Westminster"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.1246, 51.5007]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "The British Museum"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.1269, 51.5194]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tower of London"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.0759, 51.5081]
+      }
+    }
+  ]
+}
